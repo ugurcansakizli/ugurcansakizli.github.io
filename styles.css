@@ -29,10 +29,12 @@ nav ul li a {
 .section {
   padding: 100px;
   text-align: center;
+  margin-top: 120px;
 }
 
 .section:nth-child(odd) {
   background-color: #f5f5f5;
+  margin-top: 120px;
 }
 
 .fixed-header {
