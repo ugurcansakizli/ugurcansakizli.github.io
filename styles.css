@@ -85,6 +85,7 @@ nav ul li a:hover {
 
 .publication-list li {
   margin-bottom: 20px;
+  padding-left: 0; /* Remove default padding */
 }
 
 .publication-list strong {
