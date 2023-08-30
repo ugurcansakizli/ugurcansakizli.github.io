@@ -8,6 +8,7 @@ nav {
   background-color: #333;
   color: #fff;
   text-align: center;
+  padding: 10px 0;
 }
 
 nav ul {
@@ -24,18 +25,17 @@ nav ul li {
 nav ul li a {
   color: #fff;
   text-decoration: none;
-  font-size: 24px;
+  font-size: 18px;
 }
 
 nav ul li a:hover {
   background-color: white;
-  color: #333; /* Change text color when hovered */
+  color: #333;
 }
 
 .section {
-  padding: 100px;
+  padding: 80px 0;
   text-align: left;
-  margin-top: 120px;
 }
 
 .section:nth-child(odd) {
@@ -47,29 +47,28 @@ nav ul li a:hover {
   top: 0;
   left: 0;
   width: 100%;
-  background-color: #000000;
-  padding: 50px 0;
+  background-color: #000;
+  padding: 20px 0;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  z-index: 1000; /* Ensure the header is above other content */
+  z-index: 1000;
 }
 
 .content {
-  /* Add some padding to create space below the fixed header */
-  padding-top: 110px; /* Adjust this value as needed */
+  padding-top: 60px;
 }
 
 .twitter-profile a {
   display: inline-block;
   text-decoration: none;
-  color: #1DA1F2; /* Twitter blue color */
-  margin-top: 10px; /* Adjust the spacing as needed */
+  color: #1DA1F2;
+  margin-top: 10px;
 }
 
 .twitter-profile img {
   vertical-align: middle;
-  width: 30px; /* Adjust the size of the logo as needed */
-  height: 30px;
-  margin-right: 5px; /* Adjust the spacing between logo and handle */
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
 }
 
 .publication-list {
@@ -78,47 +77,27 @@ nav ul li a:hover {
   margin: 0;
 }
 
-.publication-list li {
-  margin-bottom: 20px;
-  padding-left: 0;
-}
-
-.publication-list strong {
-  font-weight: bold;
-  display: block; /* Separate title and authors on different lines */
-}
-
-.publication-list .authors {
-  font-weight: normal;
-  display: block; /* Display authors on a new line */
-  margin-top: 5px;
-}
-
-.publication-list .author-bold {
-  font-weight: bold; /* Keep the bold authors inline */
-  display: inline-block; /* Keep the bold authors inline */
-  margin-right: 5px; /* Add spacing between bold and normal authors */
-}
-
 .publication-list .publication-item {
-  position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 20px; /* Add spacing between publication items */
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
 .publication-list .publication-content {
-  flex: 1; /* Allow the text content to expand */
+  flex: 1;
 }
 
 .publication-list .publication-image {
   width: 30%;
-  margin-left: 100px; /* Add spacing between text and image */
+  margin-left: 20px;
   position: relative;
 }
 
 .publication-list .publication-image img {
-  width: 50%;
+  width: 100%;
   height: auto;
   opacity: 0;
   transition: opacity 0.3s;
