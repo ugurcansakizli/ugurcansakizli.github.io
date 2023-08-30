@@ -137,3 +137,12 @@ nav ul li a:hover {
   height: 24px;
   margin-right: 5px;
 }
+
+.publication-link {
+  color: #333; /* Change link color */
+  text-decoration: none; /* Remove underline */
+}
+
+.publication-link:hover {
+  text-decoration: underline; /* Add underline on hover */
+}
