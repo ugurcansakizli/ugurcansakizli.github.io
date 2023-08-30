@@ -97,7 +97,7 @@ nav ul li a:hover {
 }
 
 .publication-list .publication-image img {
-  width: 100%;
+  width: 40%;
   height: auto;
   opacity: 0;
   transition: opacity 0.3s;
@@ -105,4 +105,10 @@ nav ul li a:hover {
 
 .publication-list .publication-item:hover .publication-image img {
   opacity: 1;
+}
+
+.publication-year {
+  display: block; /* Display the year on a new line */
+  font-style: italic; /* Make it italic */
+  margin-top: 5px; /* Adjust the spacing */
 }
