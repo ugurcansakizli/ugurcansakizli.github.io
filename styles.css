@@ -27,6 +27,11 @@ nav ul li a {
   font-size: 18px;
 }
 
+nav ul li a:hover {
+  background-color: white;
+  color: #333; /* Change text color when hovered */
+}
+
 .section {
   padding: 100px;
   text-align: center;
