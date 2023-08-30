@@ -9,7 +9,11 @@ document.addEventListener("DOMContentLoaded", function() {
     e.preventDefault();
 
     const targetId = e.target.getAttribute("href");
-    const targetPosition = document.querySelector(targetId).offsetTop;
+    const targetSection = document.querySelector(targetId);
+    
+    // Calculate the target position by subtracting a few pixels from the top of the section
+    const offset = 20; // Adjust this value as needed
+    const targetPosition = targetSection.offsetTop - offset;
 
     window.scrollTo({
       top: targetPosition,
