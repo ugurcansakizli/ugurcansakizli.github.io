@@ -114,6 +114,10 @@ nav ul li a:hover {
   margin-top: 5px; /* Adjust the spacing */
 }
 
+.author-bold {
+  font-weight: bold;
+}
+
 .description {
   display: block; 
   margin-top: 5px; /* Adjust the spacing */
