@@ -85,16 +85,16 @@ nav ul li a:hover {
 
 .publication-list li {
   margin-bottom: 20px;
-  padding-left: 0; /* Remove default padding */
+  padding-left: 0;
 }
 
 .publication-list strong {
   font-weight: bold;
+  display: block; /* Separate title and authors on different lines */
 }
 
-.publication-list span {
+.publication-list .authors {
   font-weight: normal;
-  display: inline; /* Keep authors inline */
+  display: block; /* Display authors on a new line */
   margin-top: 5px;
-  margin-left: 10px; /* Add spacing between title and authors */
 }
