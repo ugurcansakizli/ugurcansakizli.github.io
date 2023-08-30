@@ -112,3 +112,8 @@ nav ul li a:hover {
   font-style: italic; /* Make it italic */
   margin-top: 5px; /* Adjust the spacing */
 }
+
+.authors {
+  display: block; 
+  margin-top: 5px; /* Adjust the spacing */
+}
