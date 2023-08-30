@@ -138,6 +138,20 @@ nav ul li a:hover {
   margin-right: 5px;
 }
 
+.evrim-profile a {
+  display: inline-block;
+  text-decoration: none;
+  color: #1DA1F2;
+  margin-top: 10px;
+}
+
+.evrim-profile img {
+  vertical-align: middle;
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
+}
+
 .publication-link {
   color: #333; /* Change link color */
   text-decoration: none; /* Remove underline */
