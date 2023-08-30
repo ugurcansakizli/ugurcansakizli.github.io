@@ -113,7 +113,7 @@ nav ul li a:hover {
 
 .publication-list .publication-image {
   width: 30%;
-  margin-left: 20px; /* Add spacing between text and image */
+  margin-left: 100px; /* Add spacing between text and image */
   position: relative;
 }
 
