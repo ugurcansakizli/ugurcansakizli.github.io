@@ -98,3 +98,9 @@ nav ul li a:hover {
   display: block; /* Display authors on a new line */
   margin-top: 5px;
 }
+
+.publication-list .author-bold {
+  font-weight: bold; /* Keep the bold authors inline */
+  display: inline-block; /* Keep the bold authors inline */
+  margin-right: 5px; /* Add spacing between bold and normal authors */
+}
