@@ -104,11 +104,17 @@ nav ul li a:hover {
   position: relative;
   display: flex;
   align-items: center;
+  margin-bottom: 20px; /* Add spacing between publication items */
+}
+
+.publication-list .publication-content {
+  flex: 1; /* Allow the text content to expand */
 }
 
 .publication-list .publication-image {
   width: 30%;
-  margin-left: auto; /* Push the image to the right */
+  margin-left: 20px; /* Add spacing between text and image */
+  position: relative;
 }
 
 .publication-list .publication-image img {
