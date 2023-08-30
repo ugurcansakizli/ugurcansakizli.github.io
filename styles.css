@@ -102,22 +102,22 @@ nav ul li a:hover {
 
 .publication-list .publication-item {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .publication-list .publication-image {
-  position: absolute;
-  top: 0;
-  right: 100; /* Position the image on the right side */
-  width: 30%; /* Adjust width as needed */
+  width: 30%;
+  margin-left: auto; /* Push the image to the right */
+}
+
+.publication-list .publication-image img {
+  width: 100%;
+  height: auto;
   opacity: 0;
   transition: opacity 0.3s;
 }
 
-.publication-list .publication-item:hover .publication-image {
+.publication-list .publication-item:hover .publication-image img {
   opacity: 1;
-}
-
-.publication-list .publication-image img {
-  width: 50%;
-  height: auto;
 }
