@@ -122,3 +122,17 @@ nav ul li a:hover {
   display: block; 
   margin-top: 5px; /* Adjust the spacing */
 }
+
+.linkedin-profile a {
+  display: inline-block;
+  text-decoration: none;
+  color: #1DA1F2;
+  margin-top: 10px;
+}
+
+.linkedin-profile img {
+  vertical-align: middle;
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
+}
