@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const targetSection = document.querySelector(targetId);
     
     // Calculate the target position by subtracting a few pixels from the top of the section
-    const offset = 20; // Adjust this value as needed
+    const offset = 15; // Adjust this value as needed
     const targetPosition = targetSection.offsetTop - offset;
 
     window.scrollTo({
