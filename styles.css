@@ -89,10 +89,11 @@ nav ul li a:hover {
 
 .publication-list strong {
   font-weight: bold;
-  display: block; /* Separate title and author on different lines */
 }
 
-.publication-list p {
+.publication-list span {
   font-weight: normal;
-  margin-top: 5px; /* Add spacing between title and author */
+  display: inline; /* Keep authors inline */
+  margin-top: 5px;
+  margin-left: 10px; /* Add spacing between title and authors */
 }
