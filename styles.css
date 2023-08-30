@@ -93,7 +93,7 @@ nav ul li a:hover {
 }
 
 .publication-list .publication-image img {
-  width: 40%;
+  width: 30%;
   height: auto;
   opacity: 0;
   transition: opacity 0.3s;
