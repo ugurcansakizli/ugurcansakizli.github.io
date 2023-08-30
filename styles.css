@@ -118,8 +118,8 @@ nav ul li a:hover {
 }
 
 .publication-list .publication-image img {
-  width: 200%; /* Increase the width by 10% */
-  height: 200%; /* Increase the height by 10% */
+  width: 500%; /* Increase the width by 10% */
+  height: 500%; /* Increase the height by 10% */
   object-fit: contain;
   opacity: 0.7;
   transition: opacity 0.3s;
