@@ -123,5 +123,5 @@ nav ul li a:hover {
 }
 
 .publication-item:nth-child(1)::before {
-  background-image: url(febs.jpg); /* Replace with your image path */
+  background-image: url("febs.jpg"); /* Replace with your image path */
 }
