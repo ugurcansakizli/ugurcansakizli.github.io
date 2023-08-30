@@ -24,7 +24,7 @@ nav ul li {
 nav ul li a {
   color: #fff;
   text-decoration: none;
-  font-size: 18px;
+  font-size: 40px;
 }
 
 nav ul li a:hover {
@@ -40,11 +40,6 @@ nav ul li a:hover {
 
 .section:nth-child(odd) {
   background-color: #f5f5f5;
-  margin-top: 120px;
-}
-
-.section:nth-child(even) {
-  margin-top: 120px;
 }
 
 .fixed-header {
