@@ -76,3 +76,23 @@ nav ul li a:hover {
   height: 30px;
   margin-right: 5px; /* Adjust the spacing between logo and handle */
 }
+
+.publication-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.publication-list li {
+  margin-bottom: 20px;
+}
+
+.publication-list strong {
+  font-weight: bold;
+  display: block; /* Separate title and author on different lines */
+}
+
+.publication-list p {
+  font-weight: normal;
+  margin-top: 5px; /* Add spacing between title and author */
+}
