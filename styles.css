@@ -122,7 +122,6 @@ nav ul li a:hover {
   z-index: -1;
 }
 
-/* Add this class for each publication item's unique image */
-.publication-item[data-image]::before {
-  background-image: url(attr(data-image));
+.publication-item:nth-child(1)::before {
+  background-image: url(febs.jpg); /* Replace with your image path */
 }
