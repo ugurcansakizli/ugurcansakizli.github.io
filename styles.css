@@ -89,6 +89,7 @@ nav ul li a:hover {
 .publication-list .publication-image {
   width: 30%;
   margin-right: 0;
+  margin-left: 300;
   position: relative;
 }
 
