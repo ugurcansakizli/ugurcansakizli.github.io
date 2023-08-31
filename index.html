@@ -77,16 +77,13 @@
   <form id="fs-frm" name="simple-contact-form" accept-charset="utf-8" action="https://formspree.io/f/myyqjyly" method="post">
   <fieldset id="fs-frm-inputs">
     <label for="full-name">Full Name</label>
-    <input type="text" name="name" id="full-name" required="">
-    <label for="message">Question</label>
+    <input type="text" name="name" id="full-name" placeholder="First and Last" required="">
+    <label for="message">Message</label>
     <textarea rows="5" name="message" id="message" placeholder="Type your question here." required=""></textarea>
     <input type="hidden" name="_subject" id="email-subject" value="Contact Form Submission">
   </fieldset>
   <input type="submit" value="Submit">
 </form><style>/* reset */
-#fs-frm {
-  max-width: 100%;
-}
 #fs-frm input,
 #fs-frm select,
 #fs-frm textarea,
@@ -100,9 +97,9 @@
   border: none;
   border-radius: 0;
   display: block;
-  max-width: 100%;
+  width: 95%;
   padding: 0;
-  margin: 0 auto;
+  margin: 0;
   -webkit-appearance: none;
   -moz-appearance: none;
 }
@@ -125,8 +122,6 @@
   background-color: rgba(255,255,255,0.9);
   padding: .75em 1rem;
   margin-bottom: 1.5rem;
-  max-width: 100%;
-  margin: 0 auto;
 }
 #fs-frm input:focus,
 #fs-frm select:focus,
@@ -139,7 +134,7 @@
 }
 #fs-frm [type="text"],
 #fs-frm [type="email"] {
-  width: 100%;
+  width: 95%;
 }
 #fs-frm [type="button"],
 #fs-frm [type="submit"],
