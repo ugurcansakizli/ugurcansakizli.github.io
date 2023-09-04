@@ -17,10 +17,10 @@
   <header class="fixed-header">
       <nav>
       <ul>
-        <li><a href="#section1">Education</a></li>
-        <li><a href="#section2">Publications</a></li>
-        <li><a href="#section3">Contact</a></li>
-        <li><a href="#section4">Ask me!</a></li>
+        <li><a href="#section1" onclick="collapseAll()">Education</a></li>
+        <li><a href="#section2" onclick="collapseAll()">Publications</a></li>
+        <li><a href="#section3" onclick="collapseAll()">Contact</a></li>
+        <li><a href="#section4" onclick="collapseAll()">Ask me!</a></li>
       </ul>
     </nav>
   </header>
@@ -49,6 +49,13 @@
                 }
             }
         }
+      function collapseAll() {
+      var panel = document.getElementsByClassName("panel");
+
+      for (var i = 0; i < panel.length; i++) {
+        panel[i].style.display = "none";
+      }
+    }
     </script>
   </div>
   
