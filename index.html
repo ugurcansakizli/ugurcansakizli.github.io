@@ -3,6 +3,15 @@
 <head>
   <link rel="stylesheet" type="text/css" href="styles.css">
   <title>Uğurcan Sakızlı</title>
+  <style>
+        .accordion {
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .panel {
+            display: none;
+        }
+    </style>
 </head>
 <body>
   <header class="fixed-header">
@@ -19,6 +28,28 @@
   <div id="section1" class="section">
     <h2>Education</h2>
     <p>This is the content of section 1.</p>
+    <div class="accordion" onclick="toggleAccordion(1)">Title 1</div>
+    <div class="panel">Explanatory text for Title 1.</div>
+
+    <div class="accordion" onclick="toggleAccordion(2)">Title 2</div>
+    <div class="panel">Explanatory text for Title 2.</div>
+
+    <div class="accordion" onclick="toggleAccordion(3)">Title 3</div>
+    <div class="panel">Explanatory text for Title 3.</div>
+    <script>
+        function toggleAccordion(panelNumber) {
+            var panel = document.getElementsByClassName("panel");
+            var i;
+
+            for (i = 0; i < panel.length; i++) {
+                if (i + 1 === panelNumber) {
+                    panel[i].style.display = "block";
+                } else {
+                    panel[i].style.display = "none";
+                }
+            }
+        }
+    </script>
   </div>
   
  <div id="section2" class="section">
