@@ -28,7 +28,9 @@
   <div id="section1" class="section">
     <h2>Background</h2>
     <p>This is the content of section 1.</p>
-    <h2 class="accordion-title" onclick="toggleAccordion(1)"><strong>Highschool</strong></h2>
+    <h2 class="accordion-title">
+       <span onclick="toggleAccordion(2)"><strong>Highschool</strong></span>
+    </h2>
     <div class="panel">Explanatory text for Title 1.</div>
 
     <div class="accordion" onclick="toggleAccordion(2)"><strong>Undergraduate</strong></div>
@@ -41,11 +43,11 @@
     <div class="panel">Explanatory text for Title 4.</div>
     <script>
         function toggleAccordion(panelNumber) {
-      var panel = document.getElementsByClassName("panel");
-      var i;
-
-      for (i = 0; i < panel.length; i++) {
-        if (i + 1 === panelNumber) {
+      var panel = document.querySelectorAll("#section1 .panel");
+      var title = document.querySelectorAll("#section1 .accordion-title span");
+      
+      for (var i = 0; i < panel.length; i++) {
+        if (i === panelNumber - 2) {
           panel[i].style.display = (panel[i].style.display === "block") ? "none" : "block";
         } else {
           panel[i].style.display = "none";
