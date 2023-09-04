@@ -17,7 +17,7 @@
   <header class="fixed-header">
       <nav>
       <ul>
-        <li><a href="#section1" onclick="collapseAll()">Education</a></li>
+        <li><a href="#section1" onclick="collapseAll()">Background</a></li>
         <li><a href="#section2" onclick="collapseAll()">Publications</a></li>
         <li><a href="#section3" onclick="collapseAll()">Contact</a></li>
         <li><a href="#section4" onclick="collapseAll()">Ask me!</a></li>
@@ -26,15 +26,18 @@
   </header>
   
   <div id="section1" class="section">
-    <h2>Education</h2>
+    <h2>Background</h2>
     <p>This is the content of section 1.</p>
-    <div class="accordion" onclick="toggleAccordion(1)">Title 1</div>
+    <div class="accordion" onclick="toggleAccordion(1)"><strong>Highschool</strong>strong></div>
     <div class="panel">Explanatory text for Title 1.</div>
 
-    <div class="accordion" onclick="toggleAccordion(2)">Title 2</div>
+    <div class="accordion" onclick="toggleAccordion(2)"><strong>Undergraduate</strong>strong></div>
     <div class="panel">Explanatory text for Title 2.</div>
 
-    <div class="accordion" onclick="toggleAccordion(3)">Title 3</div>
+    <div class="accordion" onclick="toggleAccordion(3)"><strong>MSc</strong>strong></div>
+    <div class="panel">Explanatory text for Title 3.</div>
+
+    <div class="accordion" onclick="toggleAccordion(3)"><strong>PhD</strong>strong></div>
     <div class="panel">Explanatory text for Title 3.</div>
     <script>
         function toggleAccordion(panelNumber) {
