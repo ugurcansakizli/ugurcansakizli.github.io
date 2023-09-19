@@ -11,6 +11,26 @@
         .panel {
             display: none;
         }
+        .panel.panel1 {
+            background-image: url('images/IEL.jpg'); /* Replace with the path to the first background image */
+            background-size: 15%; /* Resize the background image to cover the panel */
+            background-repeat: no-repeat;
+            background-position: right center; /* Place the background image on the right side and center vertically */
+            color: rgb(0, 0, 0);
+            padding: 20px;
+            display: none;
+            background-color: rgba(255, 255, 255, 0);
+}
+        .panel.panel2 {
+                    background-image: url('images/METU.jpg'); /* Replace with the path to the first background image */
+                    background-size: 15%; /* Resize the background image to cover the panel */
+                    background-repeat: no-repeat;
+                    background-position: right center; /* Place the background image on the right side and center vertically */
+                    color: rgb(0, 0, 0);
+                    padding: 20px;
+                    display: none;
+                    background-color: rgba(255, 255, 255, 0);
+        }
     </style>
 </head>
 <body>
@@ -27,26 +47,30 @@
   
   <div id="section1" class="section">
     <h2>Background</h2>
-    <p>This is the content of section 1.</p>
+    <p>Click to expand!</p>
     <h3 class="accordion-title">
        <span onclick="toggleAccordion(2)"><strong>Highschool</strong></span>
     </h3>
-    <div class="panel">Explanatory text for Title 1.</div>
+    <div class="panel panel1"><p><strong>İstanbul Erkek Lisesi - Istanbul High School</strong></p>
+
+      <p>İstanbul Erkek Lisesi is one of the most prestigious high schools in Turkey.<br> Its Germany-based style of education provides the students with a skill set which prioritizes critical thinking and problem solving.<br> I graduated İstanbul Erkek Lisesi with an Abitur, which is equal to what a German student obtains after graduating the highest tier high school in Germany.</p></div>
 
     <h3 class="accordion-title">
     <span onclick="toggleAccordion(3)"><strong>Undergraduate</strong></span>
     </h3>
-    <div class="panel">Explanatory text for Title 2.</div>
-
+    <div class="panel panel2"><p><strong>Orta Doğu Teknik Üniversitesi - Middle East Technical University</strong></p>
+    <p>METU is one of the highest ranking universities in Turkey -3rd in 2023. My major here was biology.<br>During my nudergraduate education in METU I focused on learning as much as possible on a wide variety of topics.<br>In the last two years of my studies I was hooked to immunology greatly because of wonderful classes by Mayda Gürsel.<br> I completed many grad-level immunology courses with best scores in the class.<br>In addition to immunology, I learned recombinant DNA techniques and transitioned into molecular biology. </p></div>
+    
+    
     <h3 class="accordion-title">
     <span onclick="toggleAccordion(4)"><strong>MSc</strong></span>
     </h3>
-    <div class="panel">Explanatory text for Title 3.</div>
+    <div class="panel panel3">Explanatory text for Title 3.</div>
 
     <h3 class="accordion-title">
     <span onclick="toggleAccordion(5)"><strong>PhD</strong></span>
     </h3>
-    <div class="panel">Explanatory text for Title 4.</div>
+    <div class="panel panel4">Explanatory text for Title 4.</div>
     <script>
         function toggleAccordion(panelNumber) {
       var panel = document.querySelectorAll("#section1 .panel");
