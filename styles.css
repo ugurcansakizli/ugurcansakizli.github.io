@@ -250,3 +250,23 @@ footer {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
+
+function toggleAccordion(panelNumber) {
+    var panels = document.querySelectorAll(".panel");
+    var clickedPanel = document.querySelector(`.panel${panelNumber}`);
+    
+    panels.forEach(panel => {
+        if (panel !== clickedPanel) {
+            panel.classList.remove("active");
+        }
+    });
+    
+    clickedPanel.classList.toggle("active");
+}
+
+function collapseAll() {
+    var panels = document.querySelectorAll(".panel");
+    panels.forEach(panel => {
+        panel.classList.remove("active");
+    });
+}
