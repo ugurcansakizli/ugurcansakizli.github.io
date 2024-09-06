@@ -1,271 +1,135 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <link rel="stylesheet" type="text/css" href="styles.css">
-  <title>Uğurcan Sakızlı</title>
-  <style>
-        .accordion-title {
-            cursor: pointer;
-            margin-bottom: 10px;
-        }
-        .panel {
-            display: none;
-        }
-        .panel.panel1 {
-            background-image: url('images/IEL.jpg'); /* Replace with the path to the first background image */
-            background-size: 15%; /* Resize the background image to cover the panel */
-            background-repeat: no-repeat;
-            background-position: right center; /* Place the background image on the right side and center vertically */
-            color: rgb(0, 0, 0);
-            padding: 20px;
-            display: none;
-            background-color: rgba(255, 255, 255, 0);
-}
-        .panel.panel2 {
-                    background-image: url('images/metu.jpg'); /* Replace with the path to the first background image */
-                    background-size: 15%; /* Resize the background image to cover the panel */
-                    background-repeat: no-repeat;
-                    background-position: right center; /* Place the background image on the right side and center vertically */
-                    color: rgb(0, 0, 0);
-                    padding: 20px;
-                    display: none;
-                    background-color: rgba(255, 255, 255, 0);
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uğurcan Sakızlı - Personal Website</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
-  <header class="fixed-header">
-      <nav>
-      <ul>
-        <li><a href="#section1" onclick="collapseAll()">Background</a></li>
-        <li><a href="#section2" onclick="collapseAll()">Publications</a></li>
-        <li><a href="#section3" onclick="collapseAll()">Contact</a></li>
-        <li><a href="#section4" onclick="collapseAll()">Ask me!</a></li>
-      </ul>
-    </nav>
-  </header>
-  
-  <div id="section1" class="section">
-    <h2>Background</h2>
-    <p>Click to expand!</p>
-    <h3 class="accordion-title">
-       <span onclick="toggleAccordion(2)"><strong>Highschool</strong></span>
-    </h3>
-    <div class="panel panel1"><p><strong>İstanbul Erkek Lisesi - Istanbul High School</strong></p>
+    <header class="fixed-header">
+        <nav>
+            <ul>
+                <li><a href="#section1" onclick="collapseAll()">Background</a></li>
+                <li><a href="#section2" onclick="collapseAll()">Publications</a></li>
+                <li><a href="#section3" onclick="collapseAll()">Contact</a></li>
+                <li><a href="#section4" onclick="collapseAll()">Ask me!</a></li>
+            </ul>
+        </nav>
+    </header>
 
-      <p>İstanbul Erkek Lisesi is one of the most prestigious high schools in Turkey.<br> Its Germany-based style of education provides the students with a skill set which prioritizes critical thinking and problem solving.<br> I graduated İstanbul Erkek Lisesi with an Abitur, which is equal to what a German student obtains after graduating the highest tier high school in Germany.</p></div>
+    <main>
+        <section id="section1" class="section background">
+            <h2>Background</h2>
+            <p>Click to expand!</p>
+            <div class="accordion">
+                <div class="accordion-item">
+                    <h3 class="accordion-title" onclick="toggleAccordion(2)">
+                        <i class="fas fa-graduation-cap"></i> Highschool
+                    </h3>
+                    <div class="panel panel1">
+                        <h4>İstanbul Erkek Lisesi - Istanbul High School</h4>
+                        <p>İstanbul Erkek Lisesi is one of the most prestigious high schools in Turkey. Its Germany-based style of education provides the students with a skill set which prioritizes critical thinking and problem solving. I graduated İstanbul Erkek Lisesi with an Abitur, which is equal to what a German student obtains after graduating the highest tier high school in Germany.</p>
+                    </div>
+                </div>
 
-    <h3 class="accordion-title">
-    <span onclick="toggleAccordion(3)"><strong>Undergraduate</strong></span>
-    </h3>
-    <div class="panel panel2"><p><strong>Orta Doğu Teknik Üniversitesi - Middle East Technical University</strong></p>
-    <p>METU is one of the highest ranking universities in Turkey -3rd in 2023. My major here was biology.<br>During my undergraduate education in METU I focused on learning as much as possible on a wide variety of topics.<br>In the last two years of my studies I was hooked to immunology greatly because of wonderful classes by Mayda Gürsel.<br> I completed many grad-level immunology courses with best scores in the class.<br>In addition to immunology, I learned recombinant DNA techniques and transitioned into molecular biology. </p></div>
-    
-    
-    <h3 class="accordion-title">
-    <span onclick="toggleAccordion(4)"><strong>MSc</strong></span>
-    </h3>
-    <div class="panel panel3">Explanatory text for Title 3.</div>
+                <div class="accordion-item">
+                    <h3 class="accordion-title" onclick="toggleAccordion(3)">
+                        <i class="fas fa-university"></i> Undergraduate
+                    </h3>
+                    <div class="panel panel2">
+                        <h4>Orta Doğu Teknik Üniversitesi - Middle East Technical University</h4>
+                        <p>METU is one of the highest ranking universities in Turkey -3rd in 2023. My major here was biology. During my undergraduate education in METU I focused on learning as much as possible on a wide variety of topics. In the last two years of my studies I was hooked to immunology greatly because of wonderful classes by Mayda Gürsel. I completed many grad-level immunology courses with best scores in the class. In addition to immunology, I learned recombinant DNA techniques and transitioned into molecular biology.</p>
+                    </div>
+                </div>
 
-    <h3 class="accordion-title">
-    <span onclick="toggleAccordion(5)"><strong>PhD</strong></span>
-    </h3>
-    <div class="panel panel4">Explanatory text for Title 4.</div>
-    <script>
-        function toggleAccordion(panelNumber) {
-      var panel = document.querySelectorAll("#section1 .panel");
-      var title = document.querySelectorAll("#section1 .accordion-title span");
-      
-      for (var i = 0; i < panel.length; i++) {
-        if (i === panelNumber - 2) {
-          panel[i].style.display = (panel[i].style.display === "block") ? "none" : "block";
-        } else {
-          panel[i].style.display = "none";
-                }
-            }
-        }
-      function collapseAll() {
-      var panel = document.getElementsByClassName("panel");
+                <div class="accordion-item">
+                    <h3 class="accordion-title" onclick="toggleAccordion(4)">
+                        <i class="fas fa-microscope"></i> MSc
+                    </h3>
+                    <div class="panel panel3">
+                        <p>Explanatory text for MSc.</p>
+                    </div>
+                </div>
 
-      for (var i = 0; i < panel.length; i++) {
-        panel[i].style.display = "none";
-      }
-    }
-    </script>
-  </div>
-  
- <div id="section2" class="section">
-  <h2>Publications</h2>
-  <ul class="publication-list">
-    <li class="publication-item">
-      <div class="publication-content">
-        <strong>Purinergic signalling selectively modulates maintenance but not repair neurogenesis in the zebrafish olfactory epithelium</strong>
-        <span class="authors">Demirler, M.C.*; <span class="author-bold">Sakizli, U.*</span>; Bali, B.*; Kocagöz, Y.; Eski, S.E.; Ergönen, A.; Alkiraz, A.S.; Bayramli, X.; Hassenklöver, T.; Manzini, I., Fuss, S.H. (*:Equal contribution)</span>
-        <span class="publication-year">FEBS Journal, 2019</span>
-        <span class="description">Zebrafish olfactory epithelium is a dynamic environment where neurons are constantly lost and generated. Since extracellular ATP is a strong damage associated molecular pattern, we investigated the possible role of purinergic signaling in stem cell regulation upon neuronal loss and found out that indeed exposure to extracellular ATP, in a purinergic receptor dependent manner, causes stem cells to generate olfactory neurons.</span>
-        <a href="https://febs.onlinelibrary.wiley.com/doi/full/10.1111/febs.15170" target="_blank" class="publication-link"> https://doi.org/10.1111/febs.15170</a>
-      </div>
-      <div class="publication-image">
-        <img src="images/febs.jpg">
-      </div>
-    </li>
-    <li class="publication-item">
-      <div class="publication-content">
-      <strong>Patterned Arrangements of Olfactory Receptor Gene Expression in Zebrafish are Established by Radial Movement of Specified Olfactory Sensory Neurons</strong>
-      <span class="authors">Bayramli, X.; Kocagöz, Y.; <span class="author-bold">Sakizli, U.</span>; Fuss, S.H.</span>
-      <span class="publication-year">Scientific Reports, 2017</span>
-      <span class="description">Commonly, olfactory receptor gene expression is spatially organized in the olfactory epithelium. However, the mechanism of this phenomenon is not well understood. We found out that olfactory neurons with specific receptor gene expressions are generated by stem cells which reside in specialized proliferation zones and move inwards into the zebrafish olfactory epithelium in time which results in a patterned arrangement of olfactory receptor gene expression.</span>
-    <a href="https://www.nature.com/articles/s41598-017-06041-1" target="_blank" class="publication-link"> https://doi.org/10.1038/s41598-017-06041-1</a>
-      </div>
-    </li>
-    <!-- Add more publication items as needed -->
-  </ul>
-</div>
-  
-  <div id="section3" class="section">
-    <h2>Contact</h2>
-    <p>Contact me at uguraltcizgican(at)gmail.com</p>
-      <div class="twitter-profile">
-        <a href="https://twitter.com/hitsujican" target="_blank">
-          <img src="images/twitter-logo.png">
-          <span>@hitsujican</span>
-        </a>
-      </div>
-    <div class="linkedin-profile">
-        <a href="https://www.linkedin.com/in/u%C4%9Furcan-sak%C4%B1zl%C4%B1-64880514b/" target="_blank">
-          <img src="images/linkedin-logo.png">
-          <span>@Uğurcan Sakızlı</span>
-        </a>
-      </div>
-    <div class="evrim-profile">
-        <a href="https://evrimagaci.org/babalus116" target="_blank">
-          <img src="images/evrim-logo.webp">
-          <span>@Uğurcan Sakızlı</span>
-        </a>
-      </div>
-  </div>
+                <div class="accordion-item">
+                    <h3 class="accordion-title" onclick="toggleAccordion(5)">
+                        <i class="fas fa-atom"></i> PhD
+                    </h3>
+                    <div class="panel panel4">
+                        <p>Explanatory text for PhD.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-  <div id="section4" class="section">
-    <h2>Ask me!</h2>
-  <form id="fs-frm" name="simple-contact-form" accept-charset="utf-8" action="https://formspree.io/f/myyqjyly" method="post">
-  <fieldset id="fs-frm-inputs">
-    <label for="full-name">Full Name</label>
-    <input type="text" name="name" id="full-name" placeholder="First and Last" required="">
-    <label for="message">Message</label>
-    <textarea rows="5" name="message" id="message" placeholder="Type your question here." required=""></textarea>
-    <input type="hidden" name="_subject" id="email-subject" value="Contact Form Submission">
-  </fieldset>
-  <input type="submit" value="Submit">
-</form><style>/* reset */
-#fs-frm input,
-#fs-frm select,
-#fs-frm textarea,
-#fs-frm fieldset,
-#fs-frm optgroup,
-#fs-frm label,
-#fs-frm #card-element:disabled {
-  font-family: inherit;
-  font-size: 100%;
-  color: inherit;
-  border: none;
-  border-radius: 0;
-  display: block;
-  width: 98%;
-  padding: 0;
-  margin: 0;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-}
-#fs-frm label,
-#fs-frm legend,
-#fs-frm ::placeholder {
-  font-size: .825rem;
-  margin-bottom: .5rem;
-  padding-top: .2rem;
-  display: flex;
-  align-items: baseline;
-}
+        <section id="section2" class="section publications">
+            <h2>Publications</h2>
+            <ul class="publication-list">
+                <li class="publication-item">
+                    <div class="publication-content">
+                        <h3>Purinergic signalling selectively modulates maintenance but not repair neurogenesis in the zebrafish olfactory epithelium</h3>
+                        <p class="authors">Demirler, M.C.*; <span class="author-bold">Sakizli, U.*</span>; Bali, B.*; Kocagöz, Y.; Eski, S.E.; Ergönen, A.; Alkiraz, A.S.; Bayramli, X.; Hassenklöver, T.; Manzini, I., Fuss, S.H. (*:Equal contribution)</p>
+                        <p class="publication-year">FEBS Journal, 2019</p>
+                        <p class="description">Zebrafish olfactory epithelium is a dynamic environment where neurons are constantly lost and generated. Since extracellular ATP is a strong damage associated molecular pattern, we investigated the possible role of purinergic signaling in stem cell regulation upon neuronal loss and found out that indeed exposure to extracellular ATP, in a purinergic receptor dependent manner, causes stem cells to generate olfactory neurons.</p>
+                        <a href="https://febs.onlinelibrary.wiley.com/doi/full/10.1111/febs.15170" target="_blank" class="publication-link">Read more <i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                    <div class="publication-image">
+                        <img src="images/febs.jpg" alt="FEBS Journal Publication">
+                    </div>
+                </li>
+                <li class="publication-item">
+                    <div class="publication-content">
+                        <h3>Patterned Arrangements of Olfactory Receptor Gene Expression in Zebrafish are Established by Radial Movement of Specified Olfactory Sensory Neurons</h3>
+                        <p class="authors">Bayramli, X.; Kocagöz, Y.; <span class="author-bold">Sakizli, U.</span>; Fuss, S.H.</p>
+                        <p class="publication-year">Scientific Reports, 2017</p>
+                        <p class="description">Commonly, olfactory receptor gene expression is spatially organized in the olfactory epithelium. However, the mechanism of this phenomenon is not well understood. We found out that olfactory neurons with specific receptor gene expressions are generated by stem cells which reside in specialized proliferation zones and move inwards into the zebrafish olfactory epithelium in time which results in a patterned arrangement of olfactory receptor gene expression.</p>
+                        <a href="https://www.nature.com/articles/s41598-017-06041-1" target="_blank" class="publication-link">Read more <i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                </li>
+            </ul>
+        </section>
 
-/* border, padding, margin, width */
-#fs-frm input,
-#fs-frm select,
-#fs-frm textarea,
-#fs-frm #card-element {
-  border: 1px solid rgba(0,0,0,0.2);
-  background-color: rgba(255,255,255,0.9);
-  padding: .75em 1rem;
-  margin-bottom: 1.5rem;
-}
-#fs-frm input:focus,
-#fs-frm select:focus,
-#fs-frm textarea:focus {
-  background-color: white;
-  outline-style: solid;
-  outline-width: thin;
-  outline-color: gray;
-  outline-offset: -1px;
-}
-#fs-frm [type="text"],
-#fs-frm [type="email"] {
-  width: 98%;
-}
-#fs-frm [type="button"],
-#fs-frm [type="submit"],
-#fs-frm [type="reset"] {
-  width: auto;
-  cursor: pointer;
-  -webkit-appearance: button;
-  -moz-appearance: button;
-  appearance: button;
-}
-#fs-frm [type="button"]:focus,
-#fs-frm [type="submit"]:focus,
-#fs-frm [type="reset"]:focus {
-  outline: none;
-}
-#fs-frm [type="submit"],
-#fs-frm [type="reset"] {
-  margin-bottom: 0;
-}
-#fs-frm select {
-  text-transform: none;
-}
+        <section id="section3" class="section contact">
+            <h2>Contact</h2>
+            <p>Contact me at uguraltcizgican(at)gmail.com</p>
+            <div class="social-profiles">
+                <a href="https://twitter.com/hitsujican" target="_blank" class="social-link">
+                    <i class="fab fa-twitter"></i>
+                    <span>@hitsujican</span>
+                </a>
+                <a href="https://www.linkedin.com/in/u%C4%9Furcan-sak%C4%B1zl%C4%B1-64880514b/" target="_blank" class="social-link">
+                    <i class="fab fa-linkedin"></i>
+                    <span>Uğurcan Sakızlı</span>
+                </a>
+                <a href="https://evrimagaci.org/babalus116" target="_blank" class="social-link">
+                    <img src="images/evrim-logo.webp" alt="Evrim Ağacı">
+                    <span>Uğurcan Sakızlı</span>
+                </a>
+            </div>
+        </section>
 
-#fs-frm [type="checkbox"] {
-  -webkit-appearance: checkbox;
-  -moz-appearance: checkbox;
-  appearance: checkbox;
-  display: inline-block;
-  width: auto;
-  margin: 0 .5em 0 0 !important;
-}
+        <section id="section4" class="section ask-me">
+            <h2>Ask me!</h2>
+            <form id="fs-frm" name="simple-contact-form" accept-charset="utf-8" action="https://formspree.io/f/myyqjyly" method="post">
+                <fieldset id="fs-frm-inputs">
+                    <label for="full-name">Full Name</label>
+                    <input type="text" name="name" id="full-name" placeholder="First and Last" required="">
+                    <label for="message">Message</label>
+                    <textarea rows="5" name="message" id="message" placeholder="Type your question here." required=""></textarea>
+                    <input type="hidden" name="_subject" id="email-subject" value="Contact Form Submission">
+                </fieldset>
+                <input type="submit" value="Submit">
+            </form>
+        </section>
+    </main>
 
-#fs-frm [type="radio"] {
-  -webkit-appearance: radio;
-  -moz-appearance: radio;
-  appearance: radio;
-}
+    <footer>
+        <p>&copy; 2024 Uğurcan Sakızlı. All rights reserved.</p>
+    </footer>
 
-/* address, locale */
-#fs-frm fieldset.locale input[name="city"],
-#fs-frm fieldset.locale select[name="state"],
-#fs-frm fieldset.locale input[name="postal-code"] {
-  display: inline;
-}
-#fs-frm fieldset.locale input[name="city"] {
-  width: 52%;
-}
-#fs-frm fieldset.locale select[name="state"],
-#fs-frm fieldset.locale input[name="postal-code"] {
-  width: 20%;
-}
-#fs-frm fieldset.locale input[name="city"],
-#fs-frm fieldset.locale select[name="state"] {
-  margin-right: 3%;
-}
-</style>
-</div>
-  
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
