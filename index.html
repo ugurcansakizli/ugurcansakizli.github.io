@@ -3,132 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uğurcan Sakızlı - Personal Website</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-    <link rel="stylesheet" type="text/css" href="styles.css">
+    <title>Uğurcan Sakızlı</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header class="fixed-header">
         <nav>
             <ul>
-                <li><a href="#section1" onclick="collapseAll()">Background</a></li>
-                <li><a href="#section2" onclick="collapseAll()">Publications</a></li>
-                <li><a href="#section3" onclick="collapseAll()">Contact</a></li>
-                <li><a href="#section4" onclick="collapseAll()">Ask me!</a></li>
+                <li><a href="#section1">Background</a></li>
+                <li><a href="#section2">Publications</a></li>
+                <li><a href="#section3">Contact</a></li>
+                <li><a href="#section4">Ask me!</a></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <section id="section1" class="section background">
+        <section id="section1" class="section">
             <h2>Background</h2>
-            <p>Click to expand!</p>
             <div class="accordion">
-                <div class="accordion-item">
-                    <h3 class="accordion-title" onclick="toggleAccordion(2)">
-                        <i class="fas fa-graduation-cap"></i> Highschool
-                    </h3>
-                    <div class="panel panel1">
-                        <h4>İstanbul Erkek Lisesi - Istanbul High School</h4>
-                        <p>İstanbul Erkek Lisesi is one of the most prestigious high schools in Turkey. Its Germany-based style of education provides the students with a skill set which prioritizes critical thinking and problem solving. I graduated İstanbul Erkek Lisesi with an Abitur, which is equal to what a German student obtains after graduating the highest tier high school in Germany.</p>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h3 class="accordion-title" onclick="toggleAccordion(3)">
-                        <i class="fas fa-university"></i> Undergraduate
-                    </h3>
-                    <div class="panel panel2">
-                        <h4>Orta Doğu Teknik Üniversitesi - Middle East Technical University</h4>
-                        <p>METU is one of the highest ranking universities in Turkey -3rd in 2023. My major here was biology. During my undergraduate education in METU I focused on learning as much as possible on a wide variety of topics. In the last two years of my studies I was hooked to immunology greatly because of wonderful classes by Mayda Gürsel. I completed many grad-level immunology courses with best scores in the class. In addition to immunology, I learned recombinant DNA techniques and transitioned into molecular biology.</p>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h3 class="accordion-title" onclick="toggleAccordion(4)">
-                        <i class="fas fa-microscope"></i> MSc
-                    </h3>
-                    <div class="panel panel3">
-                        <p>Explanatory text for MSc.</p>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h3 class="accordion-title" onclick="toggleAccordion(5)">
-                        <i class="fas fa-atom"></i> PhD
-                    </h3>
-                    <div class="panel panel4">
-                        <p>Explanatory text for PhD.</p>
-                    </div>
-                </div>
+                <h3 class="accordion-title" onclick="toggleAccordion(1)"><span>High School</span></h3>
+                <div class="panel panel1">...</div>
+                <h3 class="accordion-title" onclick="toggleAccordion(2)"><span>Undergraduate</span></h3>
+                <div class="panel panel2">...</div>
+                <!-- Add more accordion items here -->
             </div>
         </section>
 
-        <section id="section2" class="section publications">
+        <section id="section2" class="section">
             <h2>Publications</h2>
             <ul class="publication-list">
-                <li class="publication-item">
-                    <div class="publication-content">
-                        <h3>Purinergic signalling selectively modulates maintenance but not repair neurogenesis in the zebrafish olfactory epithelium</h3>
-                        <p class="authors">Demirler, M.C.*; <span class="author-bold">Sakizli, U.*</span>; Bali, B.*; Kocagöz, Y.; Eski, S.E.; Ergönen, A.; Alkiraz, A.S.; Bayramli, X.; Hassenklöver, T.; Manzini, I., Fuss, S.H. (*:Equal contribution)</p>
-                        <p class="publication-year">FEBS Journal, 2019</p>
-                        <p class="description">Zebrafish olfactory epithelium is a dynamic environment where neurons are constantly lost and generated. Since extracellular ATP is a strong damage associated molecular pattern, we investigated the possible role of purinergic signaling in stem cell regulation upon neuronal loss and found out that indeed exposure to extracellular ATP, in a purinergic receptor dependent manner, causes stem cells to generate olfactory neurons.</p>
-                        <a href="https://febs.onlinelibrary.wiley.com/doi/full/10.1111/febs.15170" target="_blank" class="publication-link">Read more <i class="fas fa-external-link-alt"></i></a>
-                    </div>
-                    <div class="publication-image">
-                        <img src="images/febs.jpg" alt="FEBS Journal Publication">
-                    </div>
-                </li>
-                <li class="publication-item">
-                    <div class="publication-content">
-                        <h3>Patterned Arrangements of Olfactory Receptor Gene Expression in Zebrafish are Established by Radial Movement of Specified Olfactory Sensory Neurons</h3>
-                        <p class="authors">Bayramli, X.; Kocagöz, Y.; <span class="author-bold">Sakizli, U.</span>; Fuss, S.H.</p>
-                        <p class="publication-year">Scientific Reports, 2017</p>
-                        <p class="description">Commonly, olfactory receptor gene expression is spatially organized in the olfactory epithelium. However, the mechanism of this phenomenon is not well understood. We found out that olfactory neurons with specific receptor gene expressions are generated by stem cells which reside in specialized proliferation zones and move inwards into the zebrafish olfactory epithelium in time which results in a patterned arrangement of olfactory receptor gene expression.</p>
-                        <a href="https://www.nature.com/articles/s41598-017-06041-1" target="_blank" class="publication-link">Read more <i class="fas fa-external-link-alt"></i></a>
-                    </div>
-                </li>
+                <!-- Publication items here -->
             </ul>
         </section>
 
-        <section id="section3" class="section contact">
+        <section id="section3" class="section">
             <h2>Contact</h2>
-            <p>Contact me at uguraltcizgican(at)gmail.com</p>
-            <div class="social-profiles">
-                <a href="https://twitter.com/hitsujican" target="_blank" class="social-link">
-                    <i class="fab fa-twitter"></i>
-                    <span>@hitsujican</span>
-                </a>
-                <a href="https://www.linkedin.com/in/u%C4%9Furcan-sak%C4%B1zl%C4%B1-64880514b/" target="_blank" class="social-link">
-                    <i class="fab fa-linkedin"></i>
-                    <span>Uğurcan Sakızlı</span>
-                </a>
-                <a href="https://evrimagaci.org/babalus116" target="_blank" class="social-link">
-                    <img src="images/evrim-logo.webp" alt="Evrim Ağacı">
-                    <span>Uğurcan Sakızlı</span>
-                </a>
+            <p>Contact me at: <a href="mailto:uguraltcizgican@gmail.com">uguraltcizgican@gmail.com</a></p>
+            <div class="social-links">
+                <a href="https://twitter.com/hitsujican" target="_blank" class="social-icon twitter"></a>
+                <a href="https://www.linkedin.com/in/u%C4%9Furcan-sak%C4%B1zl%C4%B1-64880514b/" target="_blank" class="social-icon linkedin"></a>
+                <a href="https://evrimagaci.org/babalus116" target="_blank" class="social-icon evrim"></a>
             </div>
         </section>
 
-        <section id="section4" class="section ask-me">
+        <section id="section4" class="section">
             <h2>Ask me!</h2>
-            <form id="fs-frm" name="simple-contact-form" accept-charset="utf-8" action="https://formspree.io/f/myyqjyly" method="post">
-                <fieldset id="fs-frm-inputs">
-                    <label for="full-name">Full Name</label>
-                    <input type="text" name="name" id="full-name" placeholder="First and Last" required="">
-                    <label for="message">Message</label>
-                    <textarea rows="5" name="message" id="message" placeholder="Type your question here." required=""></textarea>
-                    <input type="hidden" name="_subject" id="email-subject" value="Contact Form Submission">
-                </fieldset>
-                <input type="submit" value="Submit">
+            <form id="contact-form" action="https://formspree.io/f/myyqjyly" method="POST">
+                <!-- Form fields here -->
             </form>
         </section>
     </main>
-
-    <footer>
-        <p>&copy; 2024 Uğurcan Sakızlı. All rights reserved.</p>
-    </footer>
 
     <script src="script.js"></script>
 </body>
