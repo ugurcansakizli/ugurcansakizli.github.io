@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function() {
   const links = document.querySelectorAll("nav ul li a");
+  const header = document.querySelector('.fixed-header');
 
   links.forEach(link => {
     link.addEventListener("click", smoothScroll);
@@ -11,8 +12,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const targetId = e.target.getAttribute("href");
     const targetSection = document.querySelector(targetId);
     
-    // Calculate the target position by subtracting a few pixels from the top of the section
-    const offset = 15; // Adjust this value as needed
+    // Dynamically calculate header height so content is never hidden behind it
+    const headerHeight = header.offsetHeight;
+    const offset = headerHeight + 20; 
+    
     const targetPosition = targetSection.offsetTop - offset;
 
     window.scrollTo({
