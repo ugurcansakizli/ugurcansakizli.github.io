@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const targetId = e.target.getAttribute("href");
     const targetSection = document.querySelector(targetId);
     
-    // Dynamically calculate header height so content is never hidden behind it
     const headerHeight = header.offsetHeight;
     const offset = headerHeight + 20; 
     
