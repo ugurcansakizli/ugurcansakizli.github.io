@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frame Tint v23: colorization that follows motion</title>
+<style>
+:root{--bg:#0b0d10;--fg:#e8ecf1;--mut:#8b95a3;--line:#242a33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px system-ui,sans-serif;display:flex;flex-direction:column;min-height:100vh}
+header{padding:16px 20px 4px}
+h1{font-size:18px;margin:0 0 4px}
+.sub{color:var(--mut);font-size:13px}
+#stage{position:relative;display:flex;justify-content:center;padding:10px 20px}
+canvas#c{width:100%;max-width:960px;max-height:68vh;object-fit:contain;border-radius:14px;background:#000}
+#msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--fg);padding:40px;text-shadow:0 1px 4px #000}
+.bar{display:flex;gap:14px;flex-wrap:wrap;padding:6px 20px;align-items:center}
+button,select{background:#151a21;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;cursor:pointer}
+button.on{background:var(--fg);color:#0b0d10;border-color:var(--fg)}
+label{color:var(--mut);font-size:13px;display:flex;gap:6px;align-items:center}
+#stat{color:var(--mut);font-size:13px;padding:8px 20px 20px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Frame Tint demo v23</h1>
+  <div class="sub">The camera picture is reduced to black and white, and with "Frame-like camera" on it is also bent, softened and made noisy to resemble the Frame's tracking cameras. A colorization model then guesses the colors, with no object labels involved. Runs in your browser, nothing is uploaded.</div>
+</header>
+<div id="stage"><canvas id="c" width="960" height="720"></canvas><div id="msg">Starting camera...</div></div>
+<div class="bar">
+  <button id="split">Compare: off</button>
+  <label>Model <select id="model"><option value="sharp">Sharp (512, 57 MB)</option><option value="full">Sharp, uncompressed (512, 220 MB)</option><option value="fast">Small picture (256, half precision)</option></select></label>
+  <label>Color strength <input type="range" id="str" min="0" max="200" value="115"> <span id="strv">115%</span></label>
+  <label>Lively <input type="range" id="liv" min="0" max="100" value="60"></label>
+  <label>Look <select id="lookSel"><option value="natural">Natural</option><option value="neon">Neon</option><option value="vangogh">Van Gogh palette</option><option value="klimt">Klimt palette</option></select></label>
+  <label>Style <select id="styleSel"><option value="off">Off</option><option value="toon">Toon (game look)</option><option value="pixel">Pixel art</option><option value="oil">Oil paint</option></select></label>
+  <label>Style size <input type="range" id="brush" min="2" max="10" value="5"></label>
+  <label>Steadiness <input type="range" id="smooth" min="0" max="90" value="10"></label>
+  <label><input type="checkbox" id="follow" checked> Color follows motion</label>
+</div>
+<div class="bar">
+  <label><input type="checkbox" id="fl" checked> Frame-like camera</label>
+  <label>Lens bend <input type="range" id="bend" min="0" max="100" value="50"></label>
+  <label>Sensor noise <input type="range" id="noise" min="0" max="80" value="20"></label>
+  <label><input type="checkbox" id="ir" checked> Red-heavy gray (rough stand-in for infrared sensitivity)</label>
+  <label><input type="checkbox" id="dn" checked> Clean up noise before coloring</label>
+</div>
+<div class="bar">
+  <label><input type="checkbox" id="mem" checked> Remember the room</label>
+  <button id="forget">Forget</button>
+  <label>Slow the model down <input type="range" id="slow" min="0" max="3000" step="250" value="0"> <span id="slowv">no extra wait</span></label>
+</div>
+<div class="bar">
+  <label>Use a picture or video file as the camera <input type="file" id="file" accept="image/*,video/*"></label>
+</div>
+<div id="stat"></div>
+<video id="v" playsinline muted style="display:none"></video>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort.webgpu.min.js"></script>
+<script>
+/* ------------------------------------------------------------------------------------------------
+   MOVING THIS TO THE FRAME: the three parts below are kept separate so each can be swapped.
+   1. CORE (no browser code): gray picture in -> color (ab) out -> color layer. Port as is.
+      The model is a standard ONNX file (DDColor-tiny), so the same file runs under native
+      ONNX Runtime or a Snapdragon-specific runtime on the headset.
+   2. INPUT: here a webcam turned to gray. On the Frame: the mono passthrough frame, if apps can get it.
+   3. STICKING COLOR TO THE WORLD: color is carried forward every frame by matching brightness between
+      consecutive frames (see propagate), helped by a rough whole-picture shift estimate. On the Frame:
+      replace the shift estimate with head pose, keep propagate for moving objects, and reuse one
+      color layer for both eyes so they agree.
+   Brightness always comes from the live camera; only color lags. That is what makes a slow model usable.
+   ------------------------------------------------------------------------------------------------ */
+
+// ================= 1. CORE =================
+const LIN = new Float32Array(256);                       // sRGB byte -> linear light
+for (let i = 0; i < 256; i++){ const s = i / 255; LIN[i] = s <= .04045 ? s / 12.92 : Math.pow((s + .055) / 1.055, 2.4); }
+const enc = l => { l = l < 0 ? 0 : l > 1 ? 1 : l; return 255 * (l <= .0031308 ? 12.92 * l : 1.055 * Math.pow(l, 1 / 2.4) - .055); };
+const finv = t => t > 6 / 29 ? t * t * t : 3 * (6 / 29) * (6 / 29) * (t - 4 / 29);
+const LSTAR = new Float32Array(256);                     // gray byte -> Lab lightness
+for (let i = 0; i < 256; i++){ const y = LIN[i]; LSTAR[i] = 116 * (y > 216 / 24389 ? Math.cbrt(y) : (24389 / 27 * y + 16) / 116) - 16; }
+
+// The model wants a gray picture as three identical color planes, values 0..1.
+function prepInput(gray, S){
+  const n = S * S, t = new Float32Array(3 * n);
+  for (let i = 0; i < n; i++){ const g = gray[i] / 255; t[i] = g; t[n + i] = g; t[2 * n + i] = g; }
+  return t;
+}
+// Model output is the two color channels of Lab (a, b). Combine with the lightness we already have -> RGBA.
+const ENC = new Uint8ClampedArray(4097);                 // linear light -> sRGB byte, as a lookup table
+for (let i = 0; i <= 4096; i++) ENC[i] = enc(i / 4096);
+const e8 = l => ENC[l <= 0 ? 0 : l >= 1 ? 4096 : (l * 4096 + .5) | 0];
+// "Lively" lifts weak colors much more than strong ones, so pale walls and clothes gain color while skin, which is
+// already strong, does not turn orange. Colors very close to neutral (white lights, true grays) are left alone.
+const VIB = new Float32Array(256);
+function setLively(strength, lively){ for (let c = 0; c < 256; c++) VIB[c] = strength * (1 + lively * 1.8 * Math.exp(-c / 30) * (c < 6 ? c / 6 : 1)); }
+function abToRgba(gray, A, B, n, strength, out, lively){
+  setLively(strength, lively || 0);
+  for (let i = 0; i < n; i++){
+    const a0 = A[i], b0 = B[i], c = Math.sqrt(a0 * a0 + b0 * b0), k = VIB[c > 255 ? 255 : c | 0];
+    const fy = (LSTAR[gray[i]] + 16) / 116, fx = fy + a0 * k / 500, fz = fy - b0 * k / 200;
+    const X = .95047 * finv(fx), Y = finv(fy), Z = 1.08883 * finv(fz), o = 4 * i;
+    out[o]   = e8( 3.2404542 * X - 1.5371385 * Y - .4985314 * Z);
+    out[o+1] = e8(-.9692660 * X + 1.8760108 * Y + .0415560 * Z);
+    out[o+2] = e8( .0556434 * X - .2040259 * Y + 1.0572252 * Z);
+    out[o+3] = 255;
+  }
+  return out;
+}
+// LOOKS. A look swaps the model's colors for a fixed palette. Each pixel's color is pulled toward the palette
+// colors nearest to its own hue. Pixels the model left nearly gray get a tone from dark-to-light instead
+// (shadow color in dark areas, light color in bright ones), so plain walls join in. Brightness is untouched.
+// Colors are given as Lab (a, b): a = green(-) to red(+), b = blue(-) to yellow(+).
+const LOOKS = {
+  neon:    {anchors: [[80, -10], [25, -85], [-45, -35], [-75, 75], [-8, 88], [50, 70]], shadow: [45, -75], light: [-45, -30], tone: .75},   // hot pink, electric blue, cyan, lime, yellow, orange
+  vangogh: {anchors: [[12, -62], [-38, -12], [2, 80], [36, 62], [-30, 45]],            shadow: [10, -58], light: [0, 62],    tone: .8},    // cobalt, teal, chrome yellow, orange, olive
+  klimt:   {anchors: [[8, 66], [20, 50], [42, 36], [-42, 14], [-22, -18]],             shadow: [20, 24],  light: [6, 64],    tone: .9}     // gold, ochre, bronze red, emerald, deep teal
+};
+function applyLook(look, A, B, gray, n){
+  const an = look.anchors, K = an.length, len = an.map(p => Math.hypot(p[0], p[1]));
+  const s0 = look.shadow, l0 = look.light, tone = look.tone;
+  for (let i = 0; i < n; i++){
+    const a = A[i], b = B[i], c = Math.sqrt(a * a + b * b), t = LSTAR[gray[i]] / 100;
+    let ta = 0, tb = 0;
+    if (c > .5){
+      let sw = 0, bestK = 0, bestC = -2;
+      for (let k = 0; k < K; k++){
+        const cs = (a * an[k][0] + b * an[k][1]) / (c * len[k]);        // 1 = same hue, -1 = opposite
+        if (cs > bestC){ bestC = cs; bestK = k; }
+        if (cs > 0){ const w = cs * cs * cs * cs * cs * cs; sw += w; ta += w * an[k][0]; tb += w * an[k][1]; }
+      }
+      if (sw > 1e-6){ ta /= sw; tb /= sw; } else { ta = an[bestK][0]; tb = an[bestK][1]; }
+    }
+    const x = c >= 14 ? 1 : c / 14, amt = x * x * (3 - 2 * x);          // how much the model thinks this pixel is colored
+    A[i] = ta * amt + (s0[0] + (l0[0] - s0[0]) * t) * tone * (1 - amt);
+    B[i] = tb * amt + (s0[1] + (l0[1] - s0[1]) * t) * tone * (1 - amt);
+  }
+}
+
+// BRUSH STROKES without a second model (a classic "Kuwahara" paint filter). For every pixel, look at the four
+// square patches that meet at it, pick the one that is most even in brightness, and paint the pixel with that
+// patch's average color. Flat areas melt into dabs of paint while edges stay crisp, like thick oil paint.
+// Running sums (each entry = total of everything above and left) make a patch average cost the same at any brush size.
+function paintFilter(d, w, h, r, out){               // d, out: RGBA bytes; r: brush size in pixels
+  const W1 = w + 1, n1 = W1 * (h + 1);
+  const sR = new Float64Array(n1), sG = new Float64Array(n1), sB = new Float64Array(n1), sL = new Float64Array(n1), sQ = new Float64Array(n1);
+  for (let y = 0; y < h; y++){
+    let rr = 0, rg = 0, rb = 0, rl = 0, rq = 0;
+    for (let x = 0; x < w; x++){
+      const p = 4 * (y * w + x), R = d[p], G = d[p+1], B = d[p+2], L = (R * 77 + G * 150 + B * 29) >> 8, j = (y + 1) * W1 + x + 1;
+      rr += R; rg += G; rb += B; rl += L; rq += L * L;
+      sR[j] = sR[j - W1] + rr; sG[j] = sG[j - W1] + rg; sB[j] = sB[j - W1] + rb; sL[j] = sL[j - W1] + rl; sQ[j] = sQ[j - W1] + rq;
+    }
+  }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+    let bestV = Infinity, bi0 = 0, bi1 = 0, bi2 = 0, bi3 = 0, bn = 1;
+    for (let q = 0; q < 4; q++){
+      let x0 = q & 1 ? x : x - r, x1 = q & 1 ? x + r + 1 : x + 1, y0 = q & 2 ? y : y - r, y1 = q & 2 ? y + r + 1 : y + 1;
+      if (x0 < 0) x0 = 0; if (y0 < 0) y0 = 0; if (x1 > w) x1 = w; if (y1 > h) y1 = h;
+      const i0 = y0 * W1 + x0, i1 = y0 * W1 + x1, i2 = y1 * W1 + x0, i3 = y1 * W1 + x1, cnt = (x1 - x0) * (y1 - y0);
+      const m = (sL[i3] - sL[i1] - sL[i2] + sL[i0]) / cnt, v = (sQ[i3] - sQ[i1] - sQ[i2] + sQ[i0]) / cnt - m * m;
+      if (v < bestV){ bestV = v; bi0 = i0; bi1 = i1; bi2 = i2; bi3 = i3; bn = cnt; }
+    }
+    const p = 4 * (y * w + x);
+    out[p]   = (sR[bi3] - sR[bi1] - sR[bi2] + sR[bi0]) / bn;
+    out[p+1] = (sG[bi3] - sG[bi1] - sG[bi2] + sG[bi0]) / bn;
+    out[p+2] = (sB[bi3] - sB[bi1] - sB[bi2] + sB[bi0]) / bn;
+    out[p+3] = 255;
+  }
+  return out;
+}
+
+// TOON (cel-shaded game look), applied to an already flattened picture: brightness is cut into a few flat bands
+// like the lighting steps in a cartoon-style game, colors are made a little richer, and dark ink lines are drawn
+// wherever brightness changes sharply.
+function toonFilter(d, w, h, bands, lum){            // d: RGBA bytes, changed in place; lum: scratch Float32Array(w * h)
+  const n = w * h, step = 255 / bands;
+  for (let i = 0; i < n; i++){ const p = 4 * i; lum[i] = (d[p] * 77 + d[p+1] * 150 + d[p+2] * 29) / 256; }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+    const i = y * w + x, p = 4 * i, L = lum[i];
+    const u = L / step - .5, f = Math.floor(u), fr = u - f, sm = fr < .44 ? 0 : fr > .56 ? 1 : (fr - .44) / .12;
+    const Lq = Math.max(0, (f + sm + .5) * step), sc = Lq / (L < 1 ? 1 : L);
+    let ink = 0;
+    if (x > 0 && y > 0 && x < w - 1 && y < h - 1){
+      const a = lum[i - w - 1], b = lum[i - w], c = lum[i - w + 1], e = lum[i - 1], g = lum[i + 1], k = lum[i + w - 1], l = lum[i + w], m = lum[i + w + 1];
+      const gx = c + 2 * g + m - a - 2 * e - k, gy = k + 2 * l + m - a - 2 * b - c, mag = (gx < 0 ? -gx : gx) + (gy < 0 ? -gy : gy);
+      ink = mag <= 90 ? 0 : mag >= 210 ? 1 : (mag - 90) / 120;
+    }
+    const dk = 1 - .9 * ink;
+    d[p]   = (Lq + (d[p]   * sc - Lq) * 1.35) * dk;
+    d[p+1] = (Lq + (d[p+1] * sc - Lq) * 1.35) * dk;
+    d[p+2] = (Lq + (d[p+2] * sc - Lq) * 1.35) * dk;
+  }
+}
+// PIXEL ART (retro game look): each color channel is cut to a few levels; the caller shrinks and re-enlarges the picture in hard blocks.
+function pixelFilter(d, levels){ const st = 255 / (levels - 1); for (let i = 0; i < d.length; i += 4){ d[i] = Math.round(d[i] / st) * st; d[i+1] = Math.round(d[i+1] / st) * st; d[i+2] = Math.round(d[i+2] / st) * st; } }
+
+// Shrink the model's color planes (S x S) to the small working grid (W x H).
+function sampleAb(ab, S, W, H){
+  const n = S * S, A = new Float32Array(W * H), B = new Float32Array(W * H);
+  for (let y = 0; y < H; y++){
+    const fy = Math.min(S - 1.001, Math.max(0, (y + .5) / H * S - .5)), y0 = fy | 0, ty = fy - y0;
+    for (let x = 0; x < W; x++){
+      const fx = Math.min(S - 1.001, Math.max(0, (x + .5) / W * S - .5)), x0 = fx | 0, tx = fx - x0, p = y0 * S + x0;
+      const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty, i = y * W + x;
+      A[i] = ab[p] * w00 + ab[p + 1] * w10 + ab[p + S] * w01 + ab[p + S + 1] * w11;
+      B[i] = ab[n + p] * w00 + ab[n + p + 1] * w10 + ab[n + p + S] * w01 + ab[n + p + S + 1] * w11;
+    }
+  }
+  return {A, B};
+}
+// COLOR FOLLOWS MOTION. Carries color from an earlier frame (pg) to a later one (cg).
+// Step 1, per block of 12x12 cells: find where that block came from (big moves, up to 8 cells on top of the camera shift).
+// Step 2, per pixel: look at where it came from. Brightness still matches -> keep that color. Otherwise take color
+//         from nearby pixels of the earlier frame whose brightness matches.
+// Nothing matches (newly uncovered area, or motion too fast) -> fade to gray. Gray is better than a wrong color.
+const PR = 2, BS = 12, BR = 8, WL = new Float32Array(256), SP = new Float32Array((2 * PR + 1) * (2 * PR + 1));
+for (let d = 0; d < 256; d++) WL[d] = Math.exp(-d * d / 128);
+for (let dy = -PR; dy <= PR; dy++) for (let dx = -PR; dx <= PR; dx++) SP[(dy + PR) * (2 * PR + 1) + dx + PR] = Math.exp(-(dx * dx + dy * dy) / 6);
+function blockDiff(pg, cg, bx0, by0, sx, sy, W, H){      // how different the block looks if it came from (sx, sy) away
+  let s = 0, n = 0;
+  const y1 = Math.min(H, by0 + BS), x1 = Math.min(W, bx0 + BS);
+  for (let y = by0; y < y1; y += 2){
+    const py = y - sy; if (py < 0 || py >= H) continue;
+    for (let x = bx0; x < x1; x += 2){
+      const px = x - sx; if (px < 0 || px >= W) continue;
+      const d = cg[y * W + x] - pg[py * W + px]; s += d < 0 ? -d : d; n++;
+    }
+  }
+  return n >= 6 ? s / n : 1e9;
+}
+function propagate(pg, cg, gx, gy, A, B, oA, oB, W, H, M){   // M (optional): per pixel 0 = sure, 1 = color faded, 2 = came from outside the picture
+  const bw = Math.ceil(W / BS), bh = Math.ceil(H / BS);
+  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++){
+    const bx0 = bx * BS, by0 = by * BS, s0 = blockDiff(pg, cg, bx0, by0, gx, gy, W, H);
+    let m = s0, ox = 0, oy = 0;
+    if (s0 > 4){
+      for (let dy = -BR; dy <= BR; dy += 2) for (let dx = -BR; dx <= BR; dx += 2){
+        if (!dx && !dy) continue;
+        const v = blockDiff(pg, cg, bx0, by0, gx + dx, gy + dy, W, H); if (v < m){ m = v; ox = dx; oy = dy; }
+      }
+      const cx = ox, cy = oy;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){
+        if (!dx && !dy) continue;
+        const v = blockDiff(pg, cg, bx0, by0, gx + cx + dx, gy + cy + dy, W, H); if (v < m){ m = v; ox = cx + dx; oy = cy + dy; }
+      }
+      if (m > s0 * .8){ m = s0; ox = 0; oy = 0; }          // not clearly better than staying put
+    }
+    const fb = m > 14 ? .6 : 1, sx = gx + ox, sy = gy + oy; // block found nowhere: let its color fade
+    const y1 = Math.min(H, by0 + BS), x1 = Math.min(W, bx0 + BS);
+    for (let y = by0; y < y1; y++){
+      let qy = y - sy; const outY = qy < 0 || qy >= H; qy = qy < 0 ? 0 : qy >= H ? H - 1 : qy;
+      for (let x = bx0; x < x1; x++){
+        let qx = x - sx; const out = outY || qx < 0 || qx >= W; qx = qx < 0 ? 0 : qx >= W ? W - 1 : qx;
+        const i = y * W + x, q = qy * W + qx, cv = cg[i], d0 = pg[q] - cv;
+        if (d0 <= 3 && d0 >= -3){ oA[i] = A[q] * fb; oB[i] = B[q] * fb; if (M) M[i] = out ? 2 : fb < 1 ? 1 : 0; continue; }
+        let sw = 0, sa = 0, sb = 0, bw2 = 0;
+        for (let dy = -PR; dy <= PR; dy++){
+          const yy = qy + dy; if (yy < 0 || yy >= H) continue;
+          for (let dx = -PR; dx <= PR; dx++){
+            const xx = qx + dx; if (xx < 0 || xx >= W) continue;
+            const j = yy * W + xx, dd = pg[j] - cv, wl = WL[dd < 0 ? -dd : dd], w = wl * SP[(dy + PR) * (2 * PR + 1) + dx + PR];
+            if (wl > bw2) bw2 = wl;
+            sw += w; sa += w * A[j]; sb += w * B[j];
+          }
+        }
+        const k = sw > 1e-9 ? (bw2 >= .3 ? 1 : bw2 / .3) * fb / sw : 0;
+        oA[i] = sa * k; oB[i] = sb * k;
+        if (M) M[i] = out ? 2 : fb < 1 ? 1 : 0;
+      }
+    }
+  }
+}
+
+// ROOM MEMORY. A map of colors already guessed, fixed to the room and larger than the view. When part of the
+// room comes back into view, or something moves away and uncovers it, its color is taken from the map at once
+// instead of waiting for the model. A remembered color is used only if that spot looked the same over several
+// answers in a row (so it is background, not something passing by) and its remembered brightness still matches
+// what the camera sees now.
+// On the Frame, vx/vy (where the view sits in the map) come from head pose instead of the picture-shift estimate.
+function memMake(W, H){ const n = W * H; return {W, H, A: new Float32Array(n), B: new Float32Array(n), G: new Uint8Array(n), V: new Uint8Array(n)}; }
+function memWrite(m, A, B, gray, vx, vy, W, H){
+  for (let y = 0; y < H; y++){
+    const my = y + vy; if (my < 0 || my >= m.H) continue;
+    for (let x = 0; x < W; x++){
+      const mx = x + vx; if (mx < 0 || mx >= m.W) continue;
+      const j = my * m.W + mx, i = y * W + x, d = gray[i] - m.G[j];
+      // V counts how many answers in a row saw this spot looking the same. Only spots that stayed put are trusted later,
+      // so people and other moving things never become "memories". Repeat sightings are averaged into one settled color,
+      // because the model's guess for the same wall changes with what else is in view.
+      if (m.V[j] && d <= 10 && d >= -10){ const r = Math.max(.05, 1 / (m.V[j] + 1)); m.A[j] += (A[i] - m.A[j]) * r; m.B[j] += (B[i] - m.B[j]) * r; m.G[j] += d * .3; if (m.V[j] < 255) m.V[j]++; }
+      else { m.A[j] = A[i]; m.B[j] = B[i]; m.G[j] = gray[i]; m.V[j] = 1; }
+    }
+  }
+}
+function memFill(m, A, B, gray, mask, vx, vy, W, H){     // mask null = every pixel. Returns how many pixels took their color from memory
+  let used = 0;
+  for (let y = 0; y < H; y++){
+    const my = y + vy;
+    for (let x = 0; x < W; x++){
+      const i = y * W + x, k = mask ? mask[i] : 1; if (!k) continue;
+      const mx = x + vx;
+      // Judge the 3x3 patch around the pixel, not the pixel alone: memory is trusted only if most of the patch is
+      // settled and its remembered brightness matches the picture. Deciding pixel by pixel leaves speckles along edges
+      // whenever the view position is off by a cell.
+      let n = 0, ok = 0, sd = 0;
+      for (let dy = -1; dy <= 1; dy++){
+        const yy = y + dy, my2 = my + dy; if (yy < 0 || yy >= H || my2 < 0 || my2 >= m.H) continue;
+        for (let dx = -1; dx <= 1; dx++){
+          const xx = x + dx, mx2 = mx + dx; if (xx < 0 || xx >= W || mx2 < 0 || mx2 >= m.W) continue;
+          const j = my2 * m.W + mx2, d = m.G[j] - gray[yy * W + xx];
+          n++; if (m.V[j] >= 3){ ok++; sd += d < 0 ? -d : d; }
+        }
+      }
+      if (n && ok >= n * .75 && sd <= ok * 8 && my >= 0 && my < m.H && mx >= 0 && mx < m.W && m.V[my * m.W + mx] >= 3){
+        const j = my * m.W + mx; A[i] = m.A[j]; B[i] = m.B[j]; used++; continue;
+      }
+      if (k === 2){ A[i] = 0; B[i] = 0; }                 // new to the view and never seen: gray, not a smear of the edge color
+    }
+  }
+  return used;
+}
+// Light smoothing of the color grid for display only (the stored color is left alone, so nothing blurs over time).
+// Neighbors count less the more their brightness differs, so color does not leak across edges.
+const WS = new Float32Array(256); for (let d = 0; d < 256; d++) WS[d] = Math.exp(-d * d / 288);
+function smoothAB(A, B, gray, W, H, oA, oB){
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+    const i = y * W + x, c = gray[i]; let sw = 0, sa = 0, sb = 0;
+    for (let dy = -1; dy <= 1; dy++){
+      const yy = y + dy; if (yy < 0 || yy >= H) continue;
+      for (let dx = -1; dx <= 1; dx++){
+        const xx = x + dx; if (xx < 0 || xx >= W) continue;
+        const j = yy * W + xx, d = gray[j] - c, w = WS[d < 0 ? -d : d];
+        sw += w; sa += w * A[j]; sb += w * B[j];
+      }
+    }
+    oA[i] = sa / sw; oB[i] = sb / sw;
+  }
+}
+
+// WHERE THE VIEW SITS IN THE ROOM (browser stand-in for head pose). The current picture is compared with a kept
+// reference picture, not with the previous frame, so slow pans are not rounded away and errors do not pile up.
+function shiftDiff(ref, cur, dx, dy, W, H){               // how different cur looks from ref moved by (dx, dy)
+  let s = 0, n = 0;
+  const x0 = Math.max(0, dx), x1 = Math.min(W, W + dx), y0 = Math.max(0, dy), y1 = Math.min(H, H + dy);
+  for (let y = y0; y < y1; y += 3){ const r = y * W, r2 = (y - dy) * W - dx; for (let x = x0; x < x1; x += 3){ const d = cur[r + x] - ref[r2 + x]; s += d < 0 ? -d : d; n++; } }
+  return n > 200 ? s / n : 1e9;
+}
+function trackView(tr, cur, W, H){                        // tr: {ref, rx, ry, sx, sy}; returns the view position {x, y}
+  if (!tr.ref){ tr.ref = cur; tr.sx = tr.sy = 0; return {x: tr.rx, y: tr.ry}; }
+  let best = 1e18, bx = tr.sx, by = tr.sy;
+  for (let dy = -8; dy <= 8; dy += 2) for (let dx = -8; dx <= 8; dx += 2){ const v = shiftDiff(tr.ref, cur, tr.sx + dx, tr.sy + dy, W, H) + .01 * (Math.abs(dx) + Math.abs(dy)); if (v < best){ best = v; bx = tr.sx + dx; by = tr.sy + dy; } }
+  const cx = bx, cy = by;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){ const v = shiftDiff(tr.ref, cur, cx + dx, cy + dy, W, H) + .01 * (Math.abs(cx + dx - tr.sx) + Math.abs(cy + dy - tr.sy)); if (v < best){ best = v; bx = cx + dx; by = cy + dy; } }
+  tr.sx = bx; tr.sy = by;
+  const pos = {x: tr.rx - bx, y: tr.ry - by};
+  if (Math.abs(bx) > 24 || Math.abs(by) > 18 || best > 25){ tr.ref = cur; tr.rx = pos.x; tr.ry = pos.y; tr.sx = tr.sy = 0; }   // moved far or the scene changed: take a new reference
+  return pos;
+}
+
+// ================= model loading (browser side) =================
+const MODELS = {
+  // weights stored compactly, all math in full precision: safe on graphics cards
+  sharp: {size: 512, mb: 57,  url: 'https://huggingface.co/momoapps/optimix-models/resolve/main/ddcolor-paper-tiny-int8.onnx'},
+  full:  {size: 512, mb: 220, url: 'https://huggingface.co/momoapps/optimix-models/resolve/main/ddcolor-paper-tiny.onnx'},
+  // half-precision math: fine on CPU, gave wrong (green) colors on a graphics card
+  fast:  {size: 256, mb: 108, url: 'https://huggingface.co/RonngZ/free-tool-models/resolve/main/image-colorizer/ddcolor-tiny-256-fp16.onnx'}
+};
+const $ = id => document.getElementById(id);
+const mk = () => document.createElement('canvas');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function setMsg(t){ $('msg').textContent = t; $('msg').style.display = t ? 'flex' : 'none'; }
+let session = null, S = 512, backend = '', loaded = '', updates = 0, sumMs = 0, statT = performance.now(), gpuWhy = '', gpuName = '';
+
+async function fetchModel(m){
+  let cache = null;
+  try { cache = await caches.open('frame-tint-models'); const hit = await cache.match(m.url); if (hit) return new Uint8Array(await hit.arrayBuffer()); } catch (e) {}
+  const r = await fetch(m.url);
+  if (!r.ok) throw new Error('model download failed (' + r.status + ')');
+  const total = +r.headers.get('content-length') || m.mb * 1048576, rd = r.body.getReader(), chunks = [];
+  let got = 0;
+  for (;;){
+    const {done, value} = await rd.read(); if (done) break;
+    chunks.push(value); got += value.length;
+    setMsg('Downloading color model: ' + Math.round(got / 1048576) + ' of ' + Math.round(total / 1048576) + ' MB (first time only)');
+  }
+  const buf = new Uint8Array(got); let o = 0;
+  for (const ch of chunks){ buf.set(ch, o); o += ch.length; }
+  try { if (cache) await cache.put(m.url, new Response(buf.slice())); } catch (e) {}
+  return buf;
+}
+const makeSession = (buf, provider) => ort.InferenceSession.create(buf, {executionProviders: [provider]});
+async function runAb(sess, input, size){
+  const out = await sess.run({[sess.inputNames[0]]: new ort.Tensor('float32', input, [1, 3, size, size])});
+  return out[sess.outputNames[0]].data;
+}
+async function loadModel(key){
+  const m = MODELS[key];
+  const buf = await fetchModel(m);
+  setMsg('Preparing color model...');
+  ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/';
+  let s = null, cpu = null; gpuWhy = '';
+  try { ort.env.webgpu.powerPreference = 'high-performance'; } catch (e) {}      // laptops: ask for the big graphics card, not the built-in one
+  if (!navigator.gpu) gpuWhy = 'this browser or page does not offer WebGPU (navigator.gpu is missing)';
+  else {
+    try {
+      const ad = await navigator.gpu.requestAdapter({powerPreference: 'high-performance'});
+      if (!ad) throw new Error('the browser found no usable graphics adapter');
+      try { const inf = ad.info || {}; gpuName = [inf.vendor, inf.architecture, inf.description || inf.device].filter(Boolean).join(' ') || 'unnamed'; } catch (e) { gpuName = 'unnamed'; }
+      s = await makeSession(buf, 'webgpu');
+      // Trust check: run one real frame on both the graphics card and the CPU. Different colors = the card's result is wrong.
+      setMsg('Checking that the graphics card gives correct colors (one time, a few seconds)...');
+      const probe = prepInput(grabGray(m.size), m.size);
+      const a = Float32Array.from(await runAb(s, probe, m.size));
+      cpu = await makeSession(buf, 'wasm');
+      const b2 = await runAb(cpu, probe, m.size);
+      let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b2[i]); d /= a.length;
+      if (!(d < 5)) throw new Error('with this model the graphics card gives different colors than the CPU (average error ' + d.toFixed(1) + '); try another model in the list');
+      backend = 'graphics card [' + gpuName + '] (checked against CPU, error ' + d.toFixed(3) + ')';
+      try { await cpu.release(); } catch (e) {} cpu = null;
+    } catch (e) {
+      console.warn('WebGPU path failed, using CPU', e); gpuWhy = String(e && e.message || e).slice(0, 300);
+      if (s) try { await s.release(); } catch (e2) {} s = null;
+    }
+  }
+  if (!s){ s = cpu || await makeSession(buf, 'wasm'); await runAb(s, new Float32Array(3 * m.size * m.size).fill(.5), m.size); backend = 'CPU (slow). Graphics card not used because: ' + gpuWhy; }
+  if (session) try { await session.release(); } catch (e) {}
+  session = s; S = m.size; loaded = key; setMsg('');
+}
+
+// ================= 2. INPUT =================
+const v = $('v'), c = $('c'), x = c.getContext('2d');
+let CAM = v;                          // the picture source: the webcam, or a picture / video file chosen by the user
+// FRAME-LIKE CAMERA: turns the webcam into something closer to the headset's front tracking cameras:
+// black and white, wide-angle lens bend, lower detail, sensor noise. Everything downstream (the model, motion
+// following, the display) sees only this picture. It cannot imitate true infrared; red-heavy gray is a rough stand-in.
+const FW = 640, FH = 480, fIn = mk(), fOut = mk();
+fIn.width = fOut.width = FW; fIn.height = fOut.height = FH;
+const fInG = fIn.getContext('2d', {willReadFrequently: true}), fOutG = fOut.getContext('2d'), fImg = new ImageData(FW, FH);
+const NOISE = new Float32Array(65536);
+for (let i = 0; i < 65536; i++) NOISE[i] = (Math.random() + Math.random() + Math.random() + Math.random() - 2) * 1.732;   // roughly bell-shaped, spread 1
+function makeFrameMap(k, W, H){      // for each output pixel: which input pixel a bent wide-angle lens would put there
+  const map = new Int32Array(W * H), cx = (W - 1) / 2, cy = (H - 1) / 2, R2 = cx * cx + cy * cy;
+  for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++){
+    const dx = xx - cx, dy = y - cy, f = (1 + k * (dx * dx + dy * dy) / R2) / (1 + k);
+    const sx = Math.min(W - 1, Math.max(0, Math.round(cx + dx * f))), sy = Math.min(H - 1, Math.max(0, Math.round(cy + dy * f)));
+    map[y * W + xx] = sy * W + sx;
+  }
+  return map;
+}
+let fMap = null, fK = -1;
+function buildFrame(){
+  const k = +$('bend').value / 100;
+  if (k !== fK){ fMap = makeFrameMap(k, FW, FH); fK = k; }
+  fInG.drawImage(CAM, 0, 0, FW, FH);
+  const d = fInG.getImageData(0, 0, FW, FH).data, o = fImg.data, ns = +$('noise').value / 10, red = $('ir').checked;
+  const wr = red ? 140 : 77, wg = red ? 90 : 150, wb = red ? 26 : 29, no = (Math.random() * 65536) | 0;
+  for (let i = 0, n = FW * FH; i < n; i++){
+    const p = fMap[i] * 4, g = ((d[p] * wr + d[p+1] * wg + d[p+2] * wb) >> 8) + NOISE[(no + i) & 65535] * ns, q = 4 * i;
+    o[q] = o[q+1] = o[q+2] = g; o[q+3] = 255;
+  }
+  fOutG.putImageData(fImg, 0, 0);
+  return fOut;
+}
+let SRC = v;                          // what the display treats as "the camera" (raw, noise and all)
+// NOISE CLEANUP (part of the real pipeline, needed on the headset too). Grain changes every frame, the scene mostly
+// does not, so each pixel is averaged over recent frames. Where a pixel changes by more than grain could explain,
+// something really moved and the average restarts there. The model and the motion-following use this clean picture;
+// the display keeps the live one, so cleanup adds no lag to what you see, only to color.
+const DW = 640, DH = 480, DN = DW * DH, dIn = mk(), dOut = mk();
+dIn.width = dOut.width = DW; dIn.height = dOut.height = DH;
+const dInG = dIn.getContext('2d', {willReadFrequently: true}), dOutG = dOut.getContext('2d'), dImg = new ImageData(DW, DH);
+let dAvg = null;
+function cleanStep(cur, avg){        // cur: byte brightness per pixel, avg: running average (updated in place)
+  for (let i = 0; i < avg.length; i++){
+    const df = cur[i] - avg[i], a = df < 0 ? -df : df;
+    avg[i] += df * (a <= 9 ? .2 : a >= 18 ? 1 : .2 + (a - 9) * .8 / 9);
+  }
+}
+const dCur = new Uint8Array(DN);
+function denoise(src){
+  if (!$('dn').checked){ dAvg = null; return src; }
+  dInG.drawImage(src, 0, 0, DW, DH);
+  const d = dInG.getImageData(0, 0, DW, DH).data, o = dImg.data;
+  for (let i = 0; i < DN; i++) dCur[i] = (d[4*i] * 77 + d[4*i+1] * 150 + d[4*i+2] * 29) >> 8;
+  if (!dAvg) dAvg = Float32Array.from(dCur); else cleanStep(dCur, dAvg);
+  for (let i = 0; i < DN; i++){ const q = 4 * i; o[q] = o[q+1] = o[q+2] = dAvg[i]; o[q+3] = 255; }
+  dOutG.putImageData(dImg, 0, 0);
+  return dOut;
+}
+let CSRC = v;                         // cleaned picture: what the model and the motion-following look at
+const inC = mk(), inG = inC.getContext('2d', {willReadFrequently: true});
+function grabGray(size){
+  if (inC.width !== size){ inC.width = inC.height = size; }
+  inG.drawImage(CSRC, 0, 0, size, size);
+  const d = inG.getImageData(0, 0, size, size).data, g = new Uint8Array(size * size);
+  for (let i = 0; i < g.length; i++) g[i] = (d[4*i] * 77 + d[4*i+1] * 150 + d[4*i+2] * 29) >> 8;
+  return g;
+}
+
+// ================= 3. STICKING COLOR TO THE WORLD =================
+// Whole-picture shift between two frames (camera pan). On the Frame, head pose replaces this.
+const TW = 96, TH = 72, tcv = mk(); tcv.width = TW; tcv.height = TH;
+const tg = tcv.getContext('2d', {willReadFrequently: true});
+let prevG = null;
+function trackShift(){
+  tg.drawImage(CSRC, 0, 0, TW, TH);
+  const d = tg.getImageData(0, 0, TW, TH).data, g = new Uint8Array(TW * TH);
+  for (let i = 0; i < g.length; i++) g[i] = (d[4*i] * 77 + d[4*i+1] * 150 + d[4*i+2] * 29) >> 8;
+  let rx = 0, ry = 0;
+  if (prevG){
+    const M = 3; let best = Infinity, bx = 0, by = 0, zero = 0;
+    for (let dy = -M; dy <= M; dy++) for (let dx = -M; dx <= M; dx++){
+      let s = 0;
+      for (let y = M; y < TH - M; y++){ const r = y * TW, r2 = (y + dy) * TW + dx; for (let xx = M; xx < TW - M; xx++) s += Math.abs(g[r2 + xx] - prevG[r + xx]); }
+      if (!dx && !dy) zero = s;
+      if (s < best){ best = s; bx = dx; by = dy; }
+    }
+    if (best < zero * 0.9){ rx = bx; ry = by; }
+  }
+  prevG = g;
+  return {x: rx, y: ry};
+}
+
+// Working grid for color. Color is kept as two small planes (A, B) that are carried forward every frame.
+const PW = 240, PH = 180, PN = PW * PH, STEPS = 3, STRIDE = 4;
+const pC = mk(); pC.width = PW; pC.height = PH;
+const pG = pC.getContext('2d', {willReadFrequently: true});
+const colC = mk(); colC.width = PW; colC.height = PH;
+const dispC = mk(); dispC.width = PW; dispC.height = PH;
+const dispG = dispC.getContext('2d', {willReadFrequently: true}), dispGray = new Uint8Array(PW * PH);
+const frames = new Map();          // recent gray frames, so a late model answer can be caught up to the present
+let fn = 0, oldest = 1, inflight = null;
+let live = null, pend = null, tA = new Float32Array(PN), tB = new Float32Array(PN);
+const mem = memMake(PW * 3, PH * 3), liveM = new Uint8Array(PN);
+let viewX = PW, viewY = PH, memUsed = 0;     // the view starts in the middle of the map
+const vtr = {ref: null, rx: PW, ry: PH, sx: 0, sy: 0};
+const rgba = new Uint8ClampedArray(4 * PN), shA = new Float32Array(PN), shB = new Float32Array(PN);
+function step(st, from, to, M){        // carry color in st from frame `from` to frame `to`
+  const p = frames.get(from), f = frames.get(to);
+  if (!p || !f) return;
+  let gx = 0, gy = 0;
+  for (let k = from + 1; k <= to; k++){ const fr = frames.get(k); if (fr){ gx += fr.gx; gy += fr.gy; } }
+  propagate(p.g, f.g, gx, gy, st.A, st.B, tA, tB, PW, PH, M);
+  const a = st.A, b = st.B; st.A = tA; st.B = tB; tA = a; tB = b;
+}
+function advance(){
+  const d = pG.getImageData(0, 0, PW, PH).data, g = new Uint8Array(PN);
+  for (let i = 0; i < PN; i++) g[i] = (d[4*i] * 77 + d[4*i+1] * 150 + d[4*i+2] * 29) >> 8;
+  const follow = $('follow').checked, vp = trackView(vtr, g, PW, PH);
+  fn++; frames.set(fn, {g, gx: viewX - vp.x, gy: viewY - vp.y});     // the picture moves opposite to the view
+  const remember = follow && $('mem').checked, fr = frames.get(fn);
+  viewX = vp.x; viewY = vp.y;
+  if (live && follow){
+    step(live, fn - 1, fn, remember ? liveM : null);
+    if (remember) memUsed += memFill(mem, live.A, live.B, g, liveM, viewX, viewY, PW, PH);
+  }
+  if (pend){
+    // The model's answer describes a frame from a while ago. Replay the frames since then so its color lands where things are now.
+    if (!follow || !frames.has(pend.f)) pend.f = follow ? Math.max(oldest, Math.min(pend.f, fn)) : fn;
+    for (let k = 0; k < STEPS && pend.f < fn; k++){ const to = Math.min(fn, pend.f + STRIDE); step(pend, pend.f, to); pend.f = to; }
+    if (pend.f >= fn){
+      const s = live ? +$('smooth').value / 100 : 0;
+      if (!live) live = {A: pend.A, B: pend.B};
+      else for (let i = 0; i < PN; i++){ live.A[i] = live.A[i] * s + pend.A[i] * (1 - s); live.B[i] = live.B[i] * s + pend.B[i] * (1 - s); }
+      if (remember){
+        // The fresh answer goes into the room map, then settled spots take the map's color, so a wall keeps one color
+        // while you pan. Only unsettled spots (new areas, moving things) show the raw answer.
+        memWrite(mem, pend.A, pend.B, g, viewX, viewY, PW, PH);
+        memFill(mem, live.A, live.B, g, null, viewX, viewY, PW, PH);
+      }
+      pend = null;
+    }
+  }
+  const keep = Math.min(fn - 1, pend ? pend.f : fn, inflight === null ? fn : inflight);
+  while (oldest < keep || fn - oldest > 600) frames.delete(oldest++);
+  return g;
+}
+
+async function colorLoop(){
+  for (;;){
+    try {
+      const want = $('model').value;
+      if (want !== loaded){ live = null; pend = null; await loadModel(want); }
+      const t0 = performance.now(), size = S, gray = grabGray(size);
+      inflight = fn;
+      const ab = await runAb(session, prepInput(gray, size), size);
+      const sm = sampleAb(ab, size, PW, PH);
+      pend = {A: sm.A, B: sm.B, f: inflight}; inflight = null;
+      sumMs += performance.now() - t0; updates++;
+      const wait = +$('slow').value; if (wait) await sleep(wait);
+    } catch (e) {
+      inflight = null;
+      console.error(e); setMsg('Color model problem: ' + e.message); await sleep(1500);
+      if ($('model').value === loaded) setMsg('');
+    }
+    await sleep(0);
+  }
+}
+
+// ================= display =================
+let split = false;
+const PTW = 480, PTH = 360, ptC = mk(); ptC.width = PTW; ptC.height = PTH;
+const ptG = ptC.getContext('2d', {willReadFrequently: true}), ptImg = new ImageData(PTW, PTH), ptLum = new Float32Array(PTW * PTH);
+const pxC = mk(), pxG = pxC.getContext('2d', {willReadFrequently: true});
+$('split').onclick = e => { split = !split; e.target.textContent = 'Compare: ' + (split ? 'left gray, right color' : 'off'); e.target.classList.toggle('on', split); };
+$('str').oninput = () => { $('strv').textContent = $('str').value + '%'; };
+$('forget').onclick = () => { mem.V.fill(0); };
+$('slow').oninput = () => { const w = +$('slow').value; $('slowv').textContent = w ? '+' + (w / 1000) + ' s per answer' : 'no extra wait'; };
+function draw(){
+  const W = c.width, H = c.height;
+  SRC = $('fl').checked ? buildFrame() : CAM;
+  CSRC = denoise(SRC);
+  pG.drawImage(CSRC, 0, 0, PW, PH);
+  advance();
+  dispG.drawImage(SRC, 0, 0, PW, PH);              // live brightness on the color grid, for the display
+  const dd = dispG.getImageData(0, 0, PW, PH).data, g = dispGray;
+  for (let i = 0; i < PN; i++) g[i] = (dd[4*i] * 77 + dd[4*i+1] * 150 + dd[4*i+2] * 29) >> 8;
+  x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+  const style = $('styleSel').value, paint = style !== 'off';
+  x.drawImage(paint ? CSRC : SRC, 0, 0, W, H);          // painting uses the cleaned picture, so grain does not make the paint shimmer
+  x.globalCompositeOperation = 'saturation'; x.fillStyle = '#000'; x.fillRect(0, 0, W, H);   // what the headset camera would give
+  if (live){
+    smoothAB(live.A, live.B, frames.get(fn).g, PW, PH, shA, shB);
+    const lk = LOOKS[$('lookSel').value];
+    if (lk) applyLook(lk, shA, shB, g, PN);                              // shA/shB are display copies, so the stored color stays natural
+    abToRgba(g, shA, shB, PN, +$('str').value / 100, rgba, lk ? 0 : +$('liv').value / 100);
+    colC.getContext('2d').putImageData(new ImageData(rgba, PW, PH), 0, 0);
+    x.save();
+    if (split){ x.beginPath(); x.rect(W / 2, 0, W / 2, H); x.clip(); }
+    x.globalCompositeOperation = 'color';            // keep live brightness, take only the color
+    x.drawImage(colC, 0, 0, W, H);
+    x.restore();
+  }
+  x.globalCompositeOperation = 'source-over';
+  if (style === 'oil' || style === 'toon'){               // restyle the finished picture at half size, then stretch it back
+    ptG.drawImage(c, 0, 0, PTW, PTH);
+    const src = ptG.getImageData(0, 0, PTW, PTH);
+    paintFilter(src.data, PTW, PTH, style === 'toon' ? Math.max(2, (+$('brush').value >> 1) + 1) : +$('brush').value, ptImg.data);
+    if (style === 'toon') toonFilter(ptImg.data, PTW, PTH, 5, ptLum);
+    ptG.putImageData(ptImg, 0, 0);
+    x.drawImage(ptC, 0, 0, W, H);
+  } else if (style === 'pixel'){
+    const pw = Math.round(480 / +$('brush').value), ph = Math.round(pw * H / W);
+    if (pxC.width !== pw || pxC.height !== ph){ pxC.width = pw; pxC.height = ph; }
+    pxG.drawImage(c, 0, 0, pw, ph);
+    const im = pxG.getImageData(0, 0, pw, ph); pixelFilter(im.data, 6); pxG.putImageData(im, 0, 0);
+    x.imageSmoothingEnabled = false; x.drawImage(pxC, 0, 0, W, H); x.imageSmoothingEnabled = true;
+  }
+  if (split){ x.fillStyle = '#fff'; x.fillRect(W / 2 - 1, 0, 2, H); }
+  requestAnimationFrame(draw);
+}
+
+let running = false;
+function begin(){
+  if (running) return; running = true;
+  draw();
+  setInterval(() => {
+    const now = performance.now(), dt = (now - statT) / 1000;
+    if (session && updates) $('stat').textContent = (updates / dt).toFixed(1) + ' color updates/sec, ' + Math.round(sumMs / updates) + ' ms each, running on ' + backend + ($('mem').checked ? ' | pixels colored from room memory in this period: ' + memUsed : '');
+    memUsed = 0;
+    if (updates){ updates = 0; sumMs = 0; statT = now; }
+  }, 1000);
+  colorLoop();
+}
+async function start(){
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({video: {width: 960, height: 720}});
+    v.srcObject = s; await v.play();
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    begin();
+  } catch (e) {
+    setMsg('No camera: ' + e.message + '. You can still choose a picture or video file below. Stay online (the model downloads once).');
+  }
+}
+// Use a picture or a video file as the camera, for example real footage from the headset.
+function resetColor(){ live = null; pend = null; mem.V.fill(0); vtr.ref = null; dAvg = null; prevG = null; }
+$('file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const url = URL.createObjectURL(f);
+  try {
+    if (v.srcObject){ v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
+    let w, h;
+    if (f.type.startsWith('video/')){
+      v.src = url; v.loop = true; await v.play(); CAM = v; w = v.videoWidth; h = v.videoHeight;
+    } else {
+      const img = new Image(); img.src = url; await img.decode(); CAM = img; w = img.naturalWidth; h = img.naturalHeight;
+    }
+    c.width = 960; c.height = Math.max(2, Math.round(960 * h / w));
+    $('fl').checked = false;          // real footage needs no simulated camera on top
+    resetColor(); setMsg(''); begin();
+  } catch (err) { setMsg('Could not open that file: ' + err.message); }
+};
+start();
+</script>
+</body>
+</html>
